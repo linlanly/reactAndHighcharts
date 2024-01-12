@@ -82,7 +82,7 @@ function setHightChart(chartInfo: chartObject) {
     point.graphic.attr(data);
   })
 }
-const options: Highcharts.Options = {
+const options: any = {
   chart: {
     animation: false,
     backgroundColor: "none",
@@ -149,7 +149,8 @@ const options: Highcharts.Options = {
         align: "center",
         position: "center",
         pointFormatter: function () {
-          return `${this.key}（${this.percentage.toFixed(0)}%）`
+          let _self = this as any
+          return `${_self.key}（${_self.percentage.toFixed(0)}%）`
         },
         style: {
           fontSize: 13,

@@ -196,43 +196,45 @@ function getToolipElement(name: string, color: string, value: string, position: 
   if (containerDoc[0]) {
     let tooltipDocs = containerDoc[0].getElementsByClassName('tooltip-doc')
     let tooltipDoc = tooltipDocs ? tooltipDocs[0] : null
-    if (tooltipDoc) {
-      let nameDoc = tooltipDoc.getElementsByClassName('name')
+    let tooltipEle = tooltipDoc as HTMLElement
+    if (tooltipEle) {
+      let nameDoc = tooltipEle.getElementsByClassName('name')
       if (nameDoc) {
         nameDoc[0].innerHTML = name
       }
-      let valueDoc = tooltipDoc.getElementsByClassName('value')
+      let valueDoc = tooltipEle.getElementsByClassName('value')
       if (valueDoc) {
         valueDoc[0].innerHTML = value
       }
-      let colorDoc = tooltipDoc.getElementsByClassName('color')
+      let colorDoc = tooltipEle.getElementsByClassName('color')
       if (colorDoc) {
-        colorDoc[0].style.backgroundColor = color
+        let colorEle = colorDoc[0] as HTMLElement
+        colorEle.style.backgroundColor = color
       }
     } else {
-      tooltipDoc = document.createElement('div')
-      tooltipDoc.className = 'tooltip-doc'
+      tooltipEle = document.createElement('div')
+      tooltipEle.className = 'tooltip-doc'
       let str = `<div class="name">${name}</div>
       <div class="value-box"><span class="color"></span><span class="value">${value}</span></div>`
-      tooltipDoc.innerHTML = str
-      containerDoc[0].append(tooltipDoc)
+      tooltipEle.innerHTML = str
+      containerDoc[0].append(tooltipEle)
     }
     let containerDocBound = containerDoc[0].getBoundingClientRect()
     let parentInfo: widthInfo = {
       width: containerDocBound.width,
       height: containerDocBound.height
     }
-    let currentBound = tooltipDoc.getBoundingClientRect()
+    let currentBound = tooltipEle.getBoundingClientRect()
     let currentInfo: widthInfo = {
       width: currentBound.width,
       height: currentBound.height
     }
     let point = dealPosition(parentInfo, currentInfo, position)
-    tooltipDoc.style.left = point[0] + 'px'
-    tooltipDoc.style.top = point[1] + 'px'
+    tooltipEle.style.left = point[0] + 'px'
+    tooltipEle.style.top = point[1] + 'px'
   }
 }
-const options: Highcharts.Options = {
+const options: any = {
   chart: {
     events: {
       load: function () {
@@ -292,12 +294,13 @@ const options: Highcharts.Options = {
     labels: {
       useHTML: true,
       formatter: function () {
-        if (this.isFirst) {
+        let _self = this as any
+        if (_self.isFirst) {
           return ''
         } else {
           return `<div style="display: flex;align-items: center;flex-direction: column;">
             <div style="background-color: #55E9F3;border-radius: 50%;width: 6px; height: 6px;margin-top: -10px;margin-bottom: 5px;"></div>
-          ${this.value}<div>`
+          ${_self.value}<div>`
         }
       },
       style: {

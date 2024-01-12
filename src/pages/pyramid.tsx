@@ -128,7 +128,7 @@ function dealLine(container: any) {
 	})
 }
 
-const options: Highcharts.Options = {
+const options: any = {
 	chart: {
 		type: 'pyramid',
 		marginRight: 100,
@@ -138,11 +138,12 @@ const options: Highcharts.Options = {
 				dealLine(this)
 			},
 			redraw: function () {
-				let transform = this.series[1].group.element.getAttribute('transform')
+				let _self = this as any
+				let transform = _self.series[1].group.element.getAttribute('transform')
 				let translate = transform.match(/translate\((\d+),(\d+)\)/)[0]
 				translate = translate.replace(/(\d+)/g, `$1px`)
-				this.series[1].group.element.style.transform = `rotateZ(0deg)` + translate;
-				this.series[0].group.element.style.transform = `rotateZ(0deg)` + translate;
+				_self.series[1].group.element.style.transform = `rotateZ(0deg)` + translate;
+				_self.series[0].group.element.style.transform = `rotateZ(0deg)` + translate;
 				rotatePyramid(this)
 				dealLine(this)
 			}
@@ -174,9 +175,10 @@ const options: Highcharts.Options = {
 				enabled: true,
 				useHTML: true,
 				formatter: function () {
+					let _self = this as any
 					return `<div style="margin-left: -15px;margin-right: -15px;margin-top: -2px; width: 60px;">
-            <div style="border-bottom: 2px solid white">${this.key}</div>
-            <div>${this.y}</div>
+            <div style="border-bottom: 2px solid white">${_self.key}</div>
+            <div>${_self.y}</div>
           </div>`
 				},
 				color: 'white',

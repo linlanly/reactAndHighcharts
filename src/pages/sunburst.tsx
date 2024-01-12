@@ -227,7 +227,7 @@ function drawLabels(container: any) {
     containerDoc[0].append(path)
   })
 }
-const options: Highcharts.Options = {
+const options: any = {
   chart: {
     backgroundColor: 'rgba(0,0,0)',
     events: {

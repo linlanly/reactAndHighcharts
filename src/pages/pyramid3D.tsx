@@ -198,46 +198,48 @@ function getToolipElement(name: string, color: string, value: string, position: 
   if (containerDoc[0]) {
     let tooltipDocs = containerDoc[0].getElementsByClassName('tooltip-doc')
     let tooltipDoc = tooltipDocs ? tooltipDocs[0] : null
-    if (tooltipDoc) {
+    let tooltipEle = tooltipDoc as HTMLElement
+    if (tooltipEle) {
       if (!name) {
-        tooltipDoc.style.display = 'none'
+        tooltipEle.style.display = 'none'
         return
       } else {
-        tooltipDoc.style.display = 'block'
+        tooltipEle.style.display = 'block'
       }
-      let nameDoc = tooltipDoc.getElementsByClassName('name')
+      let nameDoc = tooltipEle.getElementsByClassName('name')
       if (nameDoc) {
         nameDoc[0].innerHTML = name
       }
-      let valueDoc = tooltipDoc.getElementsByClassName('value')
+      let valueDoc = tooltipEle.getElementsByClassName('value')
       if (valueDoc) {
         valueDoc[0].innerHTML = value
       }
-      let colorDoc = tooltipDoc.getElementsByClassName('color')
+      let colorDoc = tooltipEle.getElementsByClassName('color')
       if (colorDoc) {
-        colorDoc[0].style.backgroundColor = color
+        let colorEle = colorDoc[0] as HTMLElement
+        colorEle.style.backgroundColor = color
       }
     } else {
-      tooltipDoc = document.createElement('div')
-      tooltipDoc.className = 'tooltip-doc'
+      tooltipEle = document.createElement('div')
+      tooltipEle.className = 'tooltip-doc'
       let str = `<div class="name">${name}</div>
       <div class="value-box"><span class="color"></span><span class="value">${value}</span></div>`
-      tooltipDoc.innerHTML = str
-      containerDoc[0].append(tooltipDoc)
+      tooltipEle.innerHTML = str
+      containerDoc[0].append(tooltipEle)
     }
     let containerDocBound = containerDoc[0].getBoundingClientRect()
     let parentInfo: widthInfo = {
       width: containerDocBound.width,
       height: containerDocBound.height
     }
-    let currentBound = tooltipDoc.getBoundingClientRect()
+    let currentBound = tooltipEle.getBoundingClientRect()
     let currentInfo: widthInfo = {
       width: currentBound.width,
       height: currentBound.height
     }
     let point = dealPosition(parentInfo, currentInfo, position)
-    tooltipDoc.style.left = point[0] + 'px'
-    tooltipDoc.style.top = point[1] + 'px'
+    tooltipEle.style.left = point[0] + 'px'
+    tooltipEle.style.top = point[1] + 'px'
   }
 }
 /**
@@ -259,12 +261,13 @@ function addEventListenerForTooltip(containerDoc: Element) {
       let tooltipDocs = containerDoc[0].getElementsByClassName('tooltip-doc')
       let tooltipDoc = tooltipDocs ? tooltipDocs[0] : null
       if (tooltipDoc) {
-        tooltipDoc.style.display = 'none'
+        let tooltipEle = tooltipDoc as HTMLElement
+        tooltipEle.style.display = 'none'
       }
     }
   })
 }
-const options: Highcharts.Options = {
+const options: any = {
   tooltip: {
     enabled: false
   },
