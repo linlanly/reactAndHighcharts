@@ -1,27 +1,9 @@
-import Highcharts, { Series } from 'highcharts';
+import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import Funnel from 'highcharts/modules/funnel';
+import { getLinearGradient} from "./common.ts"
 Funnel(Highcharts)
-/**
- * 获取线性渐变色
- * @param colorList 颜色数组
- * @returns 线性渐变色
- */
-function getLinearGradient(colorList: Array<string>) {
-	return {
-		linearGradient: {
-			x1: 0,
-			x2: 0.2,
-			y1: 0,
-			y2: 1
-		},
-		stops: [
-			[0, colorList[0]],
-			[0.7, colorList[1]],
-			[1, colorList[2]]
-		]
-	}
-}
+
 let colorList: Array<any> = [
 	['rgb(236, 80, 53)', 'rgb(160, 49, 30)', 'rgb(109, 35, 22)'],
 	['#FDB461', '#F09D5D', '#D47056'],

@@ -1,0 +1,25 @@
+.tooltip_doc {
+  position: absolute;
+  background-color: white;
+  border-radius: 4px;
+  padding: 10px;
+  top: 0;
+  left: 0;
+  width: fit-content;
+
+  .name {
+    white-space: nowrap;
+  }
+
+  .value_box {
+    display: flex;
+    align-items: center;
+  }
+
+  .color {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+  }
+}

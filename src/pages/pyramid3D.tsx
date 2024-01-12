@@ -1,27 +1,11 @@
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import Funnel from 'highcharts/modules/funnel';
+import { getLinearGradient } from "./common.ts"
 Funnel(Highcharts)
-/**
- * 获取线性渐变色
- * @param colorList 颜色数组
- * @returns 线性渐变色
- */
-function getLinearGradient(colorList: Array<string>) {
-  return {
-    linearGradient: {
-      x1: 0,
-      x2: 0.2,
-      y1: 0,
-      y2: 1
-    },
-    stops: [
-      [0, colorList[0]],
-      [0.7, colorList[1]],
-      [1, colorList[2]]
-    ]
-  }
-}
+import TooltipElement from "./tooltip.tsx";
+import { Component } from "react"
+
 let colorList: Array<any> = [
   ['rgb(236, 80, 53)', 'rgb(160, 49, 30)', 'rgb(109, 35, 22)'],
   ['#FDB461', '#F09D5D', '#D47056'],
@@ -162,206 +146,169 @@ function assemblePyramid(container: any, pyramidSize: sizeObj, containerDoc: Ele
     bottomLeftBottom = [topLeftBottom[0] + nextX, topLeftBottom[1] - splitHeight]
     bottomRightBottom = [topRightBottom[0] - nextX, topRightBottom[1] - splitHeight]
   })
-}/**
- * 调整tooltip的位置，防止展示不全
- * @param parentInfo highcharts容器的宽高
- * @param selfInfo tooltip元素的宽高
- * @param position 鼠标移动相对highcharts容器的位置
- * @returns tooltip的位置
- */
-function dealPosition(parentInfo: widthInfo, selfInfo: widthInfo, position: Array<number>): Array<number> {
-  let point = [0, 0]
-  if (position[0] + selfInfo.width + 10 > parentInfo.width) {
-    point[0] = parentInfo.width - selfInfo.width - 10
-  } else {
-    point[0] = position[0] + 10
-  }
-  if (position[1] + selfInfo.height + 10 > parentInfo.height) {
-    point[1] = parentInfo.height - selfInfo.height - 10
-  } else {
-    point[1] = position[1] + 10
-  }
-  return point
 }
-interface widthInfo {
-  width: number, height: number
-}
-/**
- * 生成或调整tooltip元素
- * @param name 当前移动金字塔层对应的名称
- * @param color 当前移动金字塔层对应的颜色
- * @param value 当前移动金字塔层对应的值
- * @param position 鼠标移动相对highcharts容器的位置
- */
-function getToolipElement(name: string, color: string, value: string, position: Array<number>) {
-  let containerDoc = document.getElementsByClassName('highcharts-container')
-  if (containerDoc[0]) {
-    let tooltipDocs = containerDoc[0].getElementsByClassName('tooltip-doc')
-    let tooltipDoc = tooltipDocs ? tooltipDocs[0] : null
-    let tooltipEle = tooltipDoc as HTMLElement
-    if (tooltipEle) {
-      if (!name) {
-        tooltipEle.style.display = 'none'
-        return
-      } else {
-        tooltipEle.style.display = 'block'
+export default class Pyramid3D extends Component {
+  constructor(props: any) {
+    super(props);
+    let _self = this;
+    this.hiddenTooltip = this.hiddenTooltip.bind(this);
+    this.showTooltip = this.showTooltip.bind(this);
+    this.state = {
+      tooltipData: {
+        point: [0, 0],
+        name: '',
+        display: 'none',
+        value: 122,
+        color: ''
+      },
+      options: {
+        tooltip: {
+          enabled: false
+        },
+        chart: {
+          backgroundColor: 'black',
+          events: {
+            load: function () {
+              let container = this as any
+              _self.setState({
+                tooltipData: {
+                  ..._self.state.tooltipData,
+                  parentInfo: container.containerBox
+                }
+              })
+              let containerDocs = document.getElementsByClassName('highcharts-series highcharts-series-0')
+              let containerDoc = containerDocs[0] || null
+              if (containerDoc) {
+                containerDoc.addEventListener('mousemove', _self.showTooltip)
+                containerDoc.addEventListener('mouseout', _self.hiddenTooltip)
+                let elementInfo = container.seriesGroup.element.getBoundingClientRect()
+                let parentInfo = container.container.getBoundingClientRect()
+                rotatePyramid(container, parentInfo, elementInfo)
+                assemblePyramid(container, elementInfo, containerDoc)
+              }
+            },
+            redraw: function () {
+              let container = this as any
+              _self.setState({
+                tooltipData: {
+                  ..._self.state.tooltipData,
+                  parentInfo: container.containerBox
+                }
+              })
+              let transform = container.series[0].group.element.getAttribute('transform')
+              let translate = transform.match(/translate\((\d+),(\d+)\)/)[0]
+              translate = translate.replace(/(\d+)/g, `$1px`)
+              container.series[0].group.element.style.transform = `rotateZ(0deg)` + translate;
+
+              let containerDocs = document.getElementsByClassName('highcharts-series highcharts-series-0')
+              let containerDoc = containerDocs ? containerDocs[0] : null
+              if (containerDoc) {
+                // 先移除之前添加的壳子元素
+                let paths: HTMLCollectionOf<Element> | null = containerDoc.getElementsByClassName('pyramid-extend')
+                let containerElm = containerDoc as Element
+                if (paths) {
+                  Array.from(paths).forEach(item => {
+                    containerElm.removeChild(item)
+                  })
+                  paths = null
+                }
+                let elementInfo = container.seriesGroup.element.getBoundingClientRect()
+                let parentInfo = container.container.getBoundingClientRect()
+
+                rotatePyramid(container, parentInfo, elementInfo) // 调整金字塔角度
+                assemblePyramid(container, elementInfo, containerDoc) // 调整金字塔绘制
+              }
+            }
+          }
+        },
+        title: {
+          text: '',
+          x: -50
+        },
+        plotOptions: {
+          pyramid: {
+            width: '20%',
+            height: '65%',
+            borderColor: 'black',
+            borderWidth: 0,
+            center: ['35%', '45%']
+          },
+          series: {
+            states: {
+              hover: { // 禁止鼠标移入，模块添加高亮
+                enabled: false
+              },
+              inactive: { // 禁止鼠标移入，模块灰暗
+                enabled: false
+              }
+            },
+            dataLabels: {
+              enabled: true,
+              color: 'white',
+            }
+          }
+        },
+        legend: {
+          enabled: false
+        },
+        series: [{
+          name: '水果',
+          type: 'pyramid',
+          dataLabels: {
+            position: 'right'
+          },
+          colors: colorList,
+          data: dataList
+        }]
       }
-      let nameDoc = tooltipEle.getElementsByClassName('name')
-      if (nameDoc) {
-        nameDoc[0].innerHTML = name
-      }
-      let valueDoc = tooltipEle.getElementsByClassName('value')
-      if (valueDoc) {
-        valueDoc[0].innerHTML = value
-      }
-      let colorDoc = tooltipEle.getElementsByClassName('color')
-      if (colorDoc) {
-        let colorEle = colorDoc[0] as HTMLElement
-        colorEle.style.backgroundColor = color
-      }
-    } else {
-      tooltipEle = document.createElement('div')
-      tooltipEle.className = 'tooltip-doc'
-      let str = `<div class="name">${name}</div>
-      <div class="value-box"><span class="color"></span><span class="value">${value}</span></div>`
-      tooltipEle.innerHTML = str
-      containerDoc[0].append(tooltipEle)
     }
-    let containerDocBound = containerDoc[0].getBoundingClientRect()
-    let parentInfo: widthInfo = {
-      width: containerDocBound.width,
-      height: containerDocBound.height
-    }
-    let currentBound = tooltipEle.getBoundingClientRect()
-    let currentInfo: widthInfo = {
-      width: currentBound.width,
-      height: currentBound.height
-    }
-    let point = dealPosition(parentInfo, currentInfo, position)
-    tooltipEle.style.left = point[0] + 'px'
-    tooltipEle.style.top = point[1] + 'px'
   }
-}
-/**
- * 为鼠标在金字塔层移动展示tooltip，鼠标移出隐藏tooltip
- * @param containerDoc 监听鼠标操作的容器
- */
-function addEventListenerForTooltip(containerDoc: Element) {
-  containerDoc.addEventListener('mousemove', (event) => {
+  showTooltip(event: Event) {
     let mouseEvent = event as MouseEvent
     let targetDoc = event.target
     let targetEle = targetDoc as Element
-    let name = targetEle.getAttribute('data-name') || '', color = targetEle.getAttribute('data-color') || '', value = targetEle.getAttribute('data-value') || ''
-    let position = [mouseEvent.offsetX || 0, mouseEvent.offsetY || 0]
-    getToolipElement(name, color, value, position) // 添加或修改tooltip
-  })
-  containerDoc.addEventListener('mouseout', () => {
-    let containerDoc = document.getElementsByClassName('highcharts-container')
-    if (containerDoc[0]) {
-      let tooltipDocs = containerDoc[0].getElementsByClassName('tooltip-doc')
-      let tooltipDoc = tooltipDocs ? tooltipDocs[0] : null
-      if (tooltipDoc) {
-        let tooltipEle = tooltipDoc as HTMLElement
-        tooltipEle.style.display = 'none'
-      }
+    if (targetEle.getAttribute('data-name')) {
+      let name = targetEle.getAttribute('data-name') || '', color = targetEle.getAttribute('data-color') || '', value = targetEle.getAttribute('data-value') || ''
+      let position = [mouseEvent.offsetX || 0, mouseEvent.offsetY || 0]
+      this.setState({
+        tooltipData: {
+          ...this.state.tooltipData,
+          name,
+          display: 'block',
+          value,
+          color,
+          point: position
+        }
+      })
     }
-  })
-}
-const options: any = {
-  tooltip: {
-    enabled: false
-  },
-  chart: {
-    type: 'pyramid',
-    marginRight: 100,
-    events: {
-      load: function () {
-        let container = this as any
-        let containerDocs = document.getElementsByClassName('highcharts-series highcharts-series-0')
-        let containerDoc = containerDocs[0] || null
-        if (containerDoc) {
-          addEventListenerForTooltip(containerDoc)
-          let elementInfo = container.seriesGroup.element.getBoundingClientRect()
-          let parentInfo = container.container.getBoundingClientRect()
-          rotatePyramid(container, parentInfo, elementInfo)
-          assemblePyramid(container, elementInfo, containerDoc)
-        }
-      },
-      redraw: function () {
-        let container = this as any
-        let transform = container.series[0].group.element.getAttribute('transform')
-        let translate = transform.match(/translate\((\d+),(\d+)\)/)[0]
-        translate = translate.replace(/(\d+)/g, `$1px`)
-        container.series[0].group.element.style.transform = `rotateZ(0deg)` + translate;
-
-        let containerDocs = document.getElementsByClassName('highcharts-series highcharts-series-0')
-        let containerDoc = containerDocs ? containerDocs[0] : null
-        if (containerDoc) {
-          // 先移除之前添加的壳子元素
-          let paths: HTMLCollectionOf<Element> | null = containerDoc.getElementsByClassName('pyramid-extend')
-          let containerElm = containerDoc as Element
-          if (paths) {
-            Array.from(paths).forEach(item => {
-              containerElm.removeChild(item)
-            })
-            paths = null
-          }
-          let elementInfo = container.seriesGroup.element.getBoundingClientRect()
-          let parentInfo = container.container.getBoundingClientRect()
-
-          rotatePyramid(container, parentInfo, elementInfo) // 调整金字塔角度
-          assemblePyramid(container, elementInfo, containerDoc) // 调整金字塔绘制
-        }
+  }
+  hiddenTooltip() {
+    this.setState({
+      tooltipData: {
+        ...this.state.tooltipData,
+        display: 'none',
       }
-    },
-    backgroundColor: 'black'
-  },
-  title: {
-    text: '',
-    x: -50
-  },
-  plotOptions: {
-    pyramid: {
-      width: '20%',
-      height: '65%',
-      borderColor: 'black',
-      borderWidth: 0,
-      center: ['35%', '45%']
-    },
-    series: {
-      states: {
-        hover: { // 禁止鼠标移入，模块添加高亮
-          enabled: false
-        },
-        inactive: { // 禁止鼠标移入，模块灰暗
-          enabled: false
-        }
-      },
-      dataLabels: {
-        enabled: true,
-        color: 'white',
-      }
+    })
+  }
+  componentWillUnmount() {
+    let containerDocs = document.getElementsByClassName('highcharts-series highcharts-series-0')
+    let containerDoc = containerDocs ? containerDocs[0] : null
+    if (containerDoc) {
+      containerDoc.removeEventListener('mousemove', this.showTooltip)
+      containerDoc.removeEventListener('mouseout', this.hiddenTooltip)
     }
-  },
-  legend: {
-    enabled: false
-  },
-  series: [{
-    name: '水果',
-    type: 'pyramid',
-    dataLabels: {
-      position: 'right'
-    },
-    colors: colorList,
-    data: dataList
-  }]
-}
-export default function OtherChart() {
-  return (
-    <HighchartsReact
-      highcharts={Highcharts}
-      options={options}
-      {...Highcharts.Props}
-    />
-  )
+  }
+  render() {
+    return (
+
+      <div style={{ position: 'relative' }}>
+        <HighchartsReact
+          highcharts={Highcharts}
+          options={this.state.options}
+          {...Highcharts.Props}
+        />
+        <TooltipElement tooltipData={this.state.tooltipData} />
+      </div>
+    )
+  }
 }

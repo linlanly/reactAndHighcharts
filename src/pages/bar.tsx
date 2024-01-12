@@ -1,52 +1,9 @@
 import Highcharts from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
-import '../App.css'
-/**
- * 获取线性渐变色
- * @param colorList 颜色数组
- * @returns 线性渐变色
- */
-function getLinearGradient(colorList: Array<string>) {
-  return {
-    linearGradient: {
-      x1: 0,
-      x2: 0.2,
-      y1: 0,
-      y2: 1
-    },
-    stops: [
-      [0, colorList[0]],
-      [0.7, colorList[1]],
-      [1, colorList[2]]
-    ]
-  }
-}
-/**
- * 将颜色转为rgba格式
- * @param color 颜色
- * @param transparency 透明度
- * @returns
- */
-function getRgba(color: string, transparency: number): string {
-  if (!color) {
-    return ''
-  }
-  if (color.startsWith('rgba')) {
-    let colorStr = color.split(',')
-    colorStr[colorStr.length - 1] = transparency + ')'
-    return colorStr.join(',')
-  }
-  else if (color.startsWith('rgb(')) {
-    let colorStr = color.split(')')
-    colorStr[1] = transparency + ')'
-    return colorStr.join(',')
-  } else if (color.startsWith('#')) {
-    let colorStr = color.split('#')[1]
-    let arr = [parseInt(colorStr.substring(0, 2), 16), parseInt(colorStr.substring(2, 4), 16), parseInt(colorStr.substring(4, 6), 16)]
-    return `rgba(${arr.join(',')}, ${transparency})`
-  }
-  return ''
-}
+import { Component } from 'react';
+import { getLinearGradient, getRgba} from "./common.ts"
+
+import TooltipElement from "./tooltip.tsx";
 let colorList: Array<any> = [
   ['rgb(252, 191, 181)', 'rgb(173, 69, 51)', 'rgb(94, 38, 28)'],
   ['#f7ce9f', '#ee9b3b', '#6b4e2c'],
@@ -56,6 +13,7 @@ let colorList: Array<any> = [
   ['rgb(243, 243, 91)', 'rgb(180, 180, 34)', 'rgb(133, 133, 18)'],
   ['rgb(75, 218, 75)', 'rgb(26, 160, 26)', 'rgb(10, 85, 10)'],
   ['rgb(190, 188, 188)', 'rgb(155, 154, 154)', 'rgb(104, 103, 103)']].map(item => getLinearGradient(item))
+  
 /**
  * 向highcharts的SVG添加x轴渐变样式
  * @param containerDoc series对应的元素
@@ -73,6 +31,7 @@ function addLinearGradientForXAxis(containerDoc: Element) {
   createStopElement(linearGradient, 1, '#3786CA', 0.05)
   containerDoc.append(linearGradient)
 }
+
 /**
  * 调整x轴线样式
  * @param container load函数中的this
@@ -95,6 +54,7 @@ function adjustStyleOfXAxis(container: any) {
     }
   }
 }
+
 /**
  * 调整柱子的样式
  * @param container load函数中的this
@@ -145,6 +105,7 @@ function adjustStyleOfBar(container: any, containerDoc: Element) {
     data.graphic?.element.setAttribute('stroke-width', `0`)
   })
 }
+
 /**
  * 为SVG渐变色添加步骤颜色
  * @param doc 渐变色对应的元素
@@ -160,205 +121,190 @@ function createStopElement(doc: Element, stop: number, color: string, opacity: n
   doc.append(lineStop)
 }
 
-interface widthInfo {
-  width: number, height: number
-}
-/**
- * 调整tooltip的位置，防止展示不全
- * @param parentInfo highcharts容器的宽高
- * @param selfInfo tooltip元素的宽高
- * @param position 鼠标移入相对highcharts容器的位置
- * @returns tooltip的位置
- */
-function dealPosition(parentInfo: widthInfo, selfInfo: widthInfo, position: Array<number>): Array<number> {
-  let point = [0, 0]
-  if (position[0] + selfInfo.width + 10 > parentInfo.width) {
-    point[0] = parentInfo.width - selfInfo.width - 10
-  } else {
-    point[0] = position[0] + 10
-  }
-  if (position[1] + selfInfo.height + 10 > parentInfo.height) {
-    point[1] = parentInfo.height - selfInfo.height - 10
-  } else {
-    point[1] = position[1] + 10
-  }
-  return point
-}
-/**
- * 生成或调整tooltip元素
- * @param name 当前移入柱子对应的名称
- * @param color 当前移入柱子对应的颜色
- * @param value 当前移入柱子对应的值
- * @param position 鼠标移入相对highcharts容器的位置
- */
-function getToolipElement(name: string, color: string, value: string, position: Array<number>) {
-  let containerDoc = document.getElementsByClassName('highcharts-container')
-  if (containerDoc[0]) {
-    let tooltipDocs = containerDoc[0].getElementsByClassName('tooltip-doc')
-    let tooltipDoc = tooltipDocs ? tooltipDocs[0] : null
-    let tooltipEle = tooltipDoc as HTMLElement
-    if (tooltipEle) {
-      let nameDoc = tooltipEle.getElementsByClassName('name')
-      if (nameDoc) {
-        nameDoc[0].innerHTML = name
-      }
-      let valueDoc = tooltipEle.getElementsByClassName('value')
-      if (valueDoc) {
-        valueDoc[0].innerHTML = value
-      }
-      let colorDoc = tooltipEle.getElementsByClassName('color')
-      if (colorDoc) {
-        let colorEle = colorDoc[0] as HTMLElement
-        colorEle.style.backgroundColor = color
-      }
-    } else {
-      tooltipEle = document.createElement('div')
-      tooltipEle.className = 'tooltip-doc'
-      let str = `<div class="name">${name}</div>
-      <div class="value-box"><span class="color"></span><span class="value">${value}</span></div>`
-      tooltipEle.innerHTML = str
-      containerDoc[0].append(tooltipEle)
-    }
-    let containerDocBound = containerDoc[0].getBoundingClientRect()
-    let parentInfo: widthInfo = {
-      width: containerDocBound.width,
-      height: containerDocBound.height
-    }
-    let currentBound = tooltipEle.getBoundingClientRect()
-    let currentInfo: widthInfo = {
-      width: currentBound.width,
-      height: currentBound.height
-    }
-    let point = dealPosition(parentInfo, currentInfo, position)
-    tooltipEle.style.left = point[0] + 'px'
-    tooltipEle.style.top = point[1] + 'px'
-  }
-}
-const options: any = {
-  chart: {
-    events: {
-      load: function () {
-        let containerDocs = document.getElementsByClassName('highcharts-series highcharts-series-0')
-        let containerDoc = containerDocs ? containerDocs[0] : null
-        if (containerDoc) {
-          addLinearGradientForXAxis(containerDoc)
-          containerDoc.addEventListener('mouseover', (event) => {
-            console.log('show data event', event)
-            let mouseEvent = event as MouseEvent
-            let targetDoc = event.target
-            let targetEle = targetDoc as Element
-            if (targetDoc && ['line-content'].includes(targetEle.classList[0]) && targetEle.getAttribute('data-name')) {
-              let name = targetEle.getAttribute('data-name') || '', color = targetEle.getAttribute('data-color') || '', value = targetEle.getAttribute('data-value') || ''
-              let position = [mouseEvent.offsetX || 0, mouseEvent.offsetY || 0]
-              getToolipElement(name, color, value, position)
-            }
-          })
-          adjustStyleOfXAxis(this)
-          adjustStyleOfBar(this, containerDoc)
-        }
+export default class stereoBarChart extends Component {
+  constructor(props: any) {
+    super(props);
+    let _self = this
+    this.state = {
+      tooltipData: {
+        point: [0, 0],
+        name: '',
+        display: 'none',
+        value: 122,
+        color: ''
       },
-      redraw: function () {
-        let containerDocs = document.getElementsByClassName('highcharts-series highcharts-series-0')
-        let containerDoc = containerDocs ? containerDocs[0] : null
-        if (containerDoc) {
-          // 先移除之前添加的壳子元素
-          let paths: HTMLCollectionOf<Element> | null = containerDoc.getElementsByClassName('line-content')
-          let containerElm = containerDoc as Element
-          if (paths) {
-            Array.from(paths).forEach(item => {
-              containerElm.removeChild(item)
-            })
-            paths = null
-          }
+      options: {
+        chart: {
+          events: {
+            load: function () {
+              let container = this as any
+              _self.setState({
+                tooltipData: {
+                  ..._self.state.tooltipData,
+                  parentInfo: container.containerBox
+                }
+              })
+              let containerDocs = document.getElementsByClassName('highcharts-series highcharts-series-0')
+              let containerDoc = containerDocs ? containerDocs[0] : null
+              if (containerDoc) {
+                addLinearGradientForXAxis(containerDoc)
+                containerDoc.addEventListener('mousemove', _self.showTooltip)
+                containerDoc.addEventListener('mouseout', _self.hiddenTooltip)
+                adjustStyleOfXAxis(this)
+                adjustStyleOfBar(this, containerDoc)
+              }
+            },
+            redraw: function () {
+              let container = this as any
+              _self.setState({
+                tooltipData: {
+                  ..._self.state.tooltipData,
+                  parentInfo: container.containerBox
+                }
+              })
+              let containerDocs = document.getElementsByClassName('highcharts-series highcharts-series-0')
+              let containerDoc = containerDocs ? containerDocs[0] : null
+              if (containerDoc) {
+                // 先移除之前添加的壳子元素
+                let paths: HTMLCollectionOf<Element> | null = containerDoc.getElementsByClassName('line-content')
+                let containerElm = containerDoc as Element
+                if (paths) {
+                  Array.from(paths).forEach(item => {
+                    containerElm.removeChild(item)
+                  })
+                  paths = null
+                }
 
-          adjustStyleOfXAxis(this)
-          adjustStyleOfBar(this, containerDoc)
-        }
-      }
-    },
-    backgroundColor: '#02103A'
-  },
-  credits: {
-    enabled: false//不显示LOGO
-  },
-  title: {
-    text: ''
-  },
-  colors: colorList,
-  yAxis: {
-    min: 0,
-    gridLineWidth: 0,
-    title: {
-      text: ''
-    },
-    labels: {
-      useHTML: true,
-      formatter: function () {
-        let _self = this as any
-        if (_self.isFirst) {
-          return ''
-        } else {
-          return `<div style="display: flex;align-items: center;flex-direction: column;">
-            <div style="background-color: #55E9F3;border-radius: 50%;width: 6px; height: 6px;margin-top: -10px;margin-bottom: 5px;"></div>
-          ${_self.value}<div>`
-        }
-      },
-      style: {
-        color: '#70788F'
+                adjustStyleOfXAxis(this)
+                adjustStyleOfBar(this, containerDoc)
+              }
+            }
+          },
+          backgroundColor: '#02103A'
+        },
+        credits: {
+          enabled: false//不显示LOGO
+        },
+        title: {
+          text: ''
+        },
+        colors: colorList,
+        yAxis: {
+          min: 0,
+          gridLineWidth: 0,
+          title: {
+            text: ''
+          },
+          labels: {
+            useHTML: true,
+            formatter: function () {
+              let _self = this as any
+              if (_self.isFirst) {
+                return ''
+              } else {
+                return `<div style="display: flex;align-items: center;flex-direction: column;">
+                  <div style="background-color: #55E9F3;border-radius: 50%;width: 6px; height: 6px;margin-top: -10px;margin-bottom: 5px;"></div>
+                ${_self.value}<div>`
+              }
+            },
+            style: {
+              color: '#70788F'
+            }
+          }
+        },
+        xAxis: {
+          labels: {
+            style: {
+              fontSize: '14px',
+              color: '#70788F'
+            }
+          },
+          lineWidth: 4,
+          type: 'category'
+        },
+        tooltip: {
+          valueSuffix: ' m'
+        },
+        series: [{
+          name: 'Height',
+          type: 'bar',
+          colorByPoint: true,
+          borderRadius: 0,
+          showInLegend: false,
+          data: [
+            {
+              name: 'Pyramid of Khufu',
+              y: 138.8
+            },
+            {
+              name: 'Pyramid of Khafre',
+              y: 136.4
+            },
+            {
+              name: 'Red Pyramid',
+              y: 104
+            },
+            {
+              name: 'Bent Pyramid',
+              y: 101.1
+            },
+            {
+              name: 'Pyramid of the Sun',
+              y: 75
+            }
+          ]
+        }]
       }
     }
-  },
-  xAxis: {
-    labels: {
-      style: {
-        fontSize: '14px',
-        color: '#70788F'
+    this.hiddenTooltip = this.hiddenTooltip.bind(this)
+    this.showTooltip = this.showTooltip.bind(this)
+  }
+  showTooltip(event: Event) {
+    let mouseEvent = event as MouseEvent
+    let targetDoc = event.target
+    let targetEle = targetDoc as Element
+    if (targetDoc && ['line-content'].includes(targetEle.classList[0]) && targetEle.getAttribute('data-name')) {
+      let name = targetEle.getAttribute('data-name') || '', color = targetEle.getAttribute('data-color') || '', value = targetEle.getAttribute('data-value') || ''
+      let position = [mouseEvent.offsetX || 0, mouseEvent.offsetY || 0]
+      this.setState({
+        tooltipData: {
+          ...this.state.tooltipData,
+          name,
+          display: 'block',
+          value,
+          color,
+          point: position
+        }
+      })
+    }
+  }
+  hiddenTooltip() {
+    this.setState({
+      tooltipData: {
+        ...this.state.tooltipData,
+        display: 'none',
       }
-    },
-    lineWidth: 4,
-    type: 'category'
-  },
-  tooltip: {
-    valueSuffix: ' m'
-  },
-  series: [{
-    name: 'Height',
-    type: 'bar',
-    colorByPoint: true,
-    borderRadius: 0,
-    showInLegend: false,
-    data: [
-      {
-        name: 'Pyramid of Khufu',
-        y: 138.8
-      },
-      {
-        name: 'Pyramid of Khafre',
-        y: 136.4
-      },
-      {
-        name: 'Red Pyramid',
-        y: 104
-      },
-      {
-        name: 'Bent Pyramid',
-        y: 101.1
-      },
-      {
-        name: 'Pyramid of the Sun',
-        y: 75
-      }
-    ]
-  }]
-}
-export default function OtherChart() {
-  return (
-    <>{
-      <HighchartsReact
-        highcharts={Highcharts}
-        options={options}
-        {...Highcharts.Props}
-      />}
-    </>
-  )
+    })
+  }
+  componentWillUnmount() {
+    let containerDocs = document.getElementsByClassName('highcharts-series highcharts-series-0')
+    let containerDoc = containerDocs ? containerDocs[0] : null
+    if (containerDoc) {
+      containerDoc.removeEventListener('mousemove', this.showTooltip)
+      containerDoc.removeEventListener('mouseout', this.hiddenTooltip)
+    }
+  }
+  render() {
+    return (
+
+      <div style={{ position: 'relative' }}>
+        <HighchartsReact
+          highcharts={Highcharts}
+          options={this.state.options}
+          {...Highcharts.Props}
+        />
+        <TooltipElement tooltipData={this.state.tooltipData} />
+      </div>
+    )
+  }
 }

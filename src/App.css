@@ -8,25 +8,3 @@
   color: #06197c;
   flex-direction: column;
 }
-
-.tooltip-doc {
-  position: absolute;
-  background-color: white;
-  border-radius: 4px;
-  padding: 10px;
-  top: 0;
-  left: 0;
-}
-.tooltip-doc .name {
-  white-space: nowrap;
-}
-.tooltip-doc .value-box {
-  display: flex;
-  align-items: center;
-}
-.tooltip-doc .color {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 5px;
-}
