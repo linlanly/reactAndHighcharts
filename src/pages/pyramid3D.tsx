@@ -1,18 +1,7 @@
 import Highcharts from 'highcharts';
-import { LinearGradientColorObject } from 'highcharts';
 import HighchartsReact from 'highcharts-react-official';
 import Funnel from 'highcharts/modules/funnel';
 Funnel(Highcharts)
-interface linear {
-  x1: number,
-  x2: number,
-  y1: number,
-  y2: number
-}
-interface LinearGradient {
-  linearGradient: linear,
-  stops: Array<Array<number | string>>
-}
 /**
  * 获取线性渐变色
  * @param colorList 颜色数组
@@ -32,32 +21,6 @@ function getLinearGradient(colorList: Array<string>) {
       [1, colorList[2]]
     ]
   }
-}
-/**
- * 将颜色转为rgba格式
- * @param color 颜色
- * @param transparency 透明度
- * @returns
- */
-function getRgba(color: string, transparency: number): string {
-  if (!color) {
-    return ''
-  }
-  if (color.startsWith('rgba')) {
-    let colorStr = color.split(',')
-    colorStr[colorStr.length - 1] = transparency + ')'
-    return colorStr.join(',')
-  }
-  else if (color.startsWith('rgb(')) {
-    let colorStr = color.split(')')
-    colorStr[1] = transparency + ')'
-    return colorStr.join(',')
-  } else if (color.startsWith('#')) {
-    let colorStr = color.split('#')[1]
-    let arr = [parseInt(colorStr.substring(0, 2), 16), parseInt(colorStr.substring(2, 4), 16), parseInt(colorStr.substring(4, 6), 16)]
-    return `rgba(${arr.join(',')}, ${transparency})`
-  }
-  return ''
 }
 let colorList: Array<any> = [
   ['rgb(236, 80, 53)', 'rgb(160, 49, 30)', 'rgb(109, 35, 22)'],
@@ -106,6 +69,10 @@ function rotatePyramid(container: any, parentSize: sizeObj, pyramidSize: sizeObj
   translate = translate.replace(/(\d+)/g, `$1px`)
   container.series[0].group.element.style.transform = `rotateZ(${rotateAngle}deg) ` + translate
 }
+interface extendData {
+  name: string,
+  y: number
+}
 /**
  * 绘制平面
  * @param points 点的数组
@@ -113,7 +80,7 @@ function rotatePyramid(container: any, parentSize: sizeObj, pyramidSize: sizeObj
  * @param containerDoc 将平面绘制进的容器
  * @param positoinDoc 平面绘制后的元素
  */
-function drawPlane(points: Array<Array<number>>, color: string, containerDoc: Element, positoinDoc: Element) {
+function drawPlane(points: Array<Array<number>>, color: string, containerDoc: Element, positoinDoc: Element, data?: extendData) {
   let str = ''
   points.forEach((item, index) => {
     str += (index ? ' L ' : 'M ') + item.join(' ')
@@ -123,88 +90,225 @@ function drawPlane(points: Array<Array<number>>, color: string, containerDoc: El
   path.setAttribute('d', str)
   path.setAttribute('fill', color)
   path.classList.add('pyramid-extend')
+  if (data) {
+    path.setAttribute('data-name', data.name)
+    path.setAttribute('data-value', data.y + '')
+    path.setAttribute('data-color', color)
+  }
   containerDoc.insertBefore(path, positoinDoc)
 }
-
+/**
+ * 
+ * @param container load函数中的this
+ * @param pyramidSize 金字塔的getBoundingClientRect信息
+ * @param containerDoc 容器对应的element
+ */
 function assemblePyramid(container: any, pyramidSize: sizeObj, containerDoc: Element) {
-  let startLeft: Array<number> = [], startRight: Array<number> = []
-  let angle = 45, splitHeight = 10, valueHeight = 0
-
+  let elementHeight = pyramidSize.height // 金字塔总高度
   let elementWidth = pyramidSize.width
-  let elementHeight = pyramidSize.height
-  let radian = Math.atan(elementWidth / 2 / elementHeight)
-  let secondRadian = angle * Math.PI / 180
-
+  let splitHeight = 10 // 每层之间的间隔高度
   // 计算数值为1时对应的高度
-  valueHeight = (elementHeight - (container.series[0].data.length - 1) * splitHeight) / container.series[0].total
+  let valueHeight = (elementHeight - (container.series[0].data.length - 1) * splitHeight) / container.series[0].total
+
+  let radian = Math.atan(elementWidth / 2 / elementHeight)
+  let bottomLeftBottom: Array<number> = [], bottomRightBottom: Array<number> = []
+
   container.series[0].data.forEach((item: any, index: number) => {
-    let points = container.series[0].data[0].graphic.pathArray
+    let points = item.graphic.pathArray
     if (index === 0) {
-      startLeft = [points[0][1], points[0][2]]
-      startRight = [points[1][1], points[1][2]]
+      bottomLeftBottom = [points[0][1], points[0][2]]
+      bottomRightBottom = [points[1][1], points[1][2]]
     }
+    let currentHeight = valueHeight * item.y
+    let topX = Math.abs(currentHeight * Math.tan(radian))
+    let topLeftBottom = [bottomLeftBottom[0] + topX, bottomLeftBottom[1] - currentHeight], topRightBottom = [bottomRightBottom[0] - topX, bottomRightBottom[1] - currentHeight]
+    item.graphic.element.setAttribute('d', `M ${bottomLeftBottom.join(' ')} L ${bottomRightBottom.join(' ')} L ${topRightBottom.join(' ')} L ${topLeftBottom.join(' ')} Z`) // 绘制正面
 
-    let color = item.color.stops[2][1]
-    let bottomLeftBottom = [...startLeft], bottomRightBottom = [...startRight]
-    let height = item.y * valueHeight
-    let moveX = Math.abs(height * Math.tan(radian))
-    let topLeftBottom = [startLeft[0] + moveX, startLeft[1] - height], topRightBottom = [startRight[0] - moveX, startRight[1] - height]
-    item.graphic.element.setAttribute('d', `M ${startLeft.join(' ')} L ${startRight.join(' ')} L ${topRightBottom.join(' ')} L ${topLeftBottom.join(' ')} Z`) // 绘制正面
-    item.graphic.element.setAttribute('fill', item.color)
+    item.graphic.element.setAttribute('data-name', item.name)
+    item.graphic.element.setAttribute('data-value', (item.y || 0) + '')
+    item.graphic.element.setAttribute('data-color', item.color.stops[1][1])
 
-    let sideX = Math.abs(elementWidth * Math.sin(secondRadian)), sideY = Math.abs(elementWidth * Math.cos(secondRadian))
-    let bottomLeftTop = [startLeft[0] + sideX, startLeft[1] - sideY], bottomRightTop = [startRight[0] + sideX, startRight[1] - sideY]
-    drawPlane([startLeft, startRight, bottomRightTop, bottomLeftTop], color, containerDoc, item.graphic.element)
+    // 获取右侧线中点位置
+    let labelCenter = [(topRightBottom[0] + bottomRightBottom[0]) / 2, (topRightBottom[1] + bottomRightBottom[1]) / 2]
+    let pathArr = item.dataLabel.connector.pathArray // 牵引线绘制信息
+    let splitWidth = pathArr[2][1] - pathArr[1][1] // 靠近金字塔的点到下一个点的距离
+    pathArr[1][1] = labelCenter[0] - splitWidth
+    pathArr[1][2] = labelCenter[1]
+    pathArr[2][1] = labelCenter[0]
+    pathArr[2][2] = labelCenter[1]
+    item.dataLabel.connector.element.setAttribute('d', pathArr.reduce((a: string, b: Array<Array<string | number>>) => a + b.join(' '), ''))
 
-    let secondX = Math.abs(splitHeight * Math.tan(radian))
-    startLeft = [topLeftBottom[0] + secondX, topLeftBottom[1] - splitHeight]
-    startRight = [topRightBottom[0] - secondX, topRightBottom[1] - splitHeight]
-    elementWidth -= 2 * moveX
+    let angle = 45
+    let angleRadian = angle * Math.PI / 180
+    let baseColor = item.color.stops[2][1], lightColor = item.color.stops[1][1]
+    let bottomX = Math.abs(elementWidth * Math.cos(angleRadian)), bottomY = Math.abs(elementWidth * Math.sin(angleRadian))
+    let bottomLeftTop = [bottomLeftBottom[0] + bottomX, bottomLeftBottom[1] - bottomY], bottomRightTop = [bottomRightBottom[0] + bottomX, bottomRightBottom[1] - bottomY]
+    drawPlane([bottomLeftBottom, bottomRightBottom, bottomRightTop, bottomLeftTop], baseColor, containerDoc, item.graphic.element) // 底部
 
-    let topX = Math.abs(elementWidth * Math.sin(secondRadian)), topY = Math.abs(elementWidth * Math.cos(secondRadian))
-    let topLeftTop = [topLeftBottom[0] + topX, topLeftBottom[1] - topY], topRightTop = [topRightBottom[0] + topX, topRightBottom[1] - topY]
+    elementWidth -= topX * 2
+    let moveX = Math.abs(elementWidth * Math.cos(angleRadian)), moveY = Math.abs(elementWidth * Math.sin(angleRadian))
+    let topLeftTop = [topLeftBottom[0] + moveX, topLeftBottom[1] - moveY], topRightTop = [topRightBottom[0] + moveX, topRightBottom[1] - moveY]
+    drawPlane([bottomLeftBottom, bottomLeftTop, topLeftTop, topLeftBottom], baseColor, containerDoc, item.graphic.element) // 左侧
+    drawPlane([bottomLeftTop, bottomRightTop, topRightTop, topLeftTop], baseColor, containerDoc, item.graphic.element) // 背面
+    drawPlane([topLeftBottom, topRightBottom, topRightTop, topLeftTop], lightColor, containerDoc, item.graphic.element) // 顶部
+    drawPlane([bottomRightBottom, bottomRightTop, topRightTop, topRightBottom], baseColor, containerDoc, item.graphic.element, {
+      name: item.name,
+      y: item.y
+    }) // 右侧
 
-    drawPlane([bottomLeftBottom, bottomLeftTop, topLeftTop, topLeftBottom], color, containerDoc, item.graphic.element)
-    drawPlane([bottomRightBottom, bottomRightTop, topRightTop, topRightBottom], color, containerDoc, item.graphic.element)
-    drawPlane([bottomLeftTop, bottomRightTop, topRightTop, topLeftTop], color, containerDoc, item.graphic.element)
-    drawPlane([topLeftBottom, topRightBottom, topRightTop, topLeftTop], item.color.stops[1][1], containerDoc, item.graphic.element)
-    elementWidth -= 2 * secondX
+
+    let nextX = Math.abs(splitHeight * Math.tan(radian))
+    elementWidth -= nextX * 2
+    bottomLeftBottom = [topLeftBottom[0] + nextX, topLeftBottom[1] - splitHeight]
+    bottomRightBottom = [topRightBottom[0] - nextX, topRightBottom[1] - splitHeight]
+  })
+}/**
+ * 调整tooltip的位置，防止展示不全
+ * @param parentInfo highcharts容器的宽高
+ * @param selfInfo tooltip元素的宽高
+ * @param position 鼠标移动相对highcharts容器的位置
+ * @returns tooltip的位置
+ */
+function dealPosition(parentInfo: widthInfo, selfInfo: widthInfo, position: Array<number>): Array<number> {
+  let point = [0, 0]
+  if (position[0] + selfInfo.width + 10 > parentInfo.width) {
+    point[0] = parentInfo.width - selfInfo.width - 10
+  } else {
+    point[0] = position[0] + 10
+  }
+  if (position[1] + selfInfo.height + 10 > parentInfo.height) {
+    point[1] = parentInfo.height - selfInfo.height - 10
+  } else {
+    point[1] = position[1] + 10
+  }
+  return point
+}
+interface widthInfo {
+  width: number, height: number
+}
+/**
+ * 生成或调整tooltip元素
+ * @param name 当前移动金字塔层对应的名称
+ * @param color 当前移动金字塔层对应的颜色
+ * @param value 当前移动金字塔层对应的值
+ * @param position 鼠标移动相对highcharts容器的位置
+ */
+function getToolipElement(name: string, color: string, value: string, position: Array<number>) {
+  let containerDoc = document.getElementsByClassName('highcharts-container')
+  if (containerDoc[0]) {
+    let tooltipDocs = containerDoc[0].getElementsByClassName('tooltip-doc')
+    let tooltipDoc = tooltipDocs ? tooltipDocs[0] : null
+    if (tooltipDoc) {
+      if (!name) {
+        tooltipDoc.style.display = 'none'
+        return
+      } else {
+        tooltipDoc.style.display = 'block'
+      }
+      let nameDoc = tooltipDoc.getElementsByClassName('name')
+      if (nameDoc) {
+        nameDoc[0].innerHTML = name
+      }
+      let valueDoc = tooltipDoc.getElementsByClassName('value')
+      if (valueDoc) {
+        valueDoc[0].innerHTML = value
+      }
+      let colorDoc = tooltipDoc.getElementsByClassName('color')
+      if (colorDoc) {
+        colorDoc[0].style.backgroundColor = color
+      }
+    } else {
+      tooltipDoc = document.createElement('div')
+      tooltipDoc.className = 'tooltip-doc'
+      let str = `<div class="name">${name}</div>
+      <div class="value-box"><span class="color"></span><span class="value">${value}</span></div>`
+      tooltipDoc.innerHTML = str
+      containerDoc[0].append(tooltipDoc)
+    }
+    let containerDocBound = containerDoc[0].getBoundingClientRect()
+    let parentInfo: widthInfo = {
+      width: containerDocBound.width,
+      height: containerDocBound.height
+    }
+    let currentBound = tooltipDoc.getBoundingClientRect()
+    let currentInfo: widthInfo = {
+      width: currentBound.width,
+      height: currentBound.height
+    }
+    let point = dealPosition(parentInfo, currentInfo, position)
+    tooltipDoc.style.left = point[0] + 'px'
+    tooltipDoc.style.top = point[1] + 'px'
+  }
+}
+/**
+ * 为鼠标在金字塔层移动展示tooltip，鼠标移出隐藏tooltip
+ * @param containerDoc 监听鼠标操作的容器
+ */
+function addEventListenerForTooltip(containerDoc: Element) {
+  containerDoc.addEventListener('mousemove', (event) => {
+    let mouseEvent = event as MouseEvent
+    let targetDoc = event.target
+    let targetEle = targetDoc as Element
+    let name = targetEle.getAttribute('data-name') || '', color = targetEle.getAttribute('data-color') || '', value = targetEle.getAttribute('data-value') || ''
+    let position = [mouseEvent.offsetX || 0, mouseEvent.offsetY || 0]
+    getToolipElement(name, color, value, position) // 添加或修改tooltip
+  })
+  containerDoc.addEventListener('mouseout', () => {
+    let containerDoc = document.getElementsByClassName('highcharts-container')
+    if (containerDoc[0]) {
+      let tooltipDocs = containerDoc[0].getElementsByClassName('tooltip-doc')
+      let tooltipDoc = tooltipDocs ? tooltipDocs[0] : null
+      if (tooltipDoc) {
+        tooltipDoc.style.display = 'none'
+      }
+    }
   })
 }
 const options: Highcharts.Options = {
+  tooltip: {
+    enabled: false
+  },
   chart: {
     type: 'pyramid',
     marginRight: 100,
     events: {
       load: function () {
+        let container = this as any
         let containerDocs = document.getElementsByClassName('highcharts-series highcharts-series-0')
         let containerDoc = containerDocs[0] || null
-        let elementInfo = this.seriesGroup.element.getBoundingClientRect()
-        let containerInfo = this.container.getBoundingClientRect()
-        // 选择金字塔使之一边垂直，看起来更好看
-        rotatePyramid(this, containerInfo, elementInfo)
-        assemblePyramid(this, elementInfo, containerDoc)
+        if (containerDoc) {
+          addEventListenerForTooltip(containerDoc)
+          let elementInfo = container.seriesGroup.element.getBoundingClientRect()
+          let parentInfo = container.container.getBoundingClientRect()
+          rotatePyramid(container, parentInfo, elementInfo)
+          assemblePyramid(container, elementInfo, containerDoc)
+        }
       },
       redraw: function () {
+        let container = this as any
+        let transform = container.series[0].group.element.getAttribute('transform')
+        let translate = transform.match(/translate\((\d+),(\d+)\)/)[0]
+        translate = translate.replace(/(\d+)/g, `$1px`)
+        container.series[0].group.element.style.transform = `rotateZ(0deg)` + translate;
+
         let containerDocs = document.getElementsByClassName('highcharts-series highcharts-series-0')
-        let containerDoc = containerDocs[0] || null
-        let paths: HTMLCollectionOf<Element> | null = containerDoc.getElementsByClassName('pyramid-extend')
-        if (paths) {
-          Array.from(paths).forEach(item => {
-            containerDoc.removeChild(item)
-          })
-          paths = null
+        let containerDoc = containerDocs ? containerDocs[0] : null
+        if (containerDoc) {
+          // 先移除之前添加的壳子元素
+          let paths: HTMLCollectionOf<Element> | null = containerDoc.getElementsByClassName('pyramid-extend')
+          let containerElm = containerDoc as Element
+          if (paths) {
+            Array.from(paths).forEach(item => {
+              containerElm.removeChild(item)
+            })
+            paths = null
+          }
+          let elementInfo = container.seriesGroup.element.getBoundingClientRect()
+          let parentInfo = container.container.getBoundingClientRect()
+
+          rotatePyramid(container, parentInfo, elementInfo) // 调整金字塔角度
+          assemblePyramid(container, elementInfo, containerDoc) // 调整金字塔绘制
         }
-        
-				let transform = this.series[0].group.element.getAttribute('transform')
-				let translate = transform.match(/translate\((\d+),(\d+)\)/)[0]
-				translate = translate.replace(/(\d+)/g, `$1px`)
-				this.series[0].group.element.style.transform = `rotateZ(0deg)` + translate;
-        
-        let elementInfo = this.seriesGroup.element.getBoundingClientRect()
-        let containerInfo = this.container.getBoundingClientRect()
-        rotatePyramid(this, containerInfo, elementInfo)
-        assemblePyramid(this, elementInfo, containerDoc)
       }
     },
     backgroundColor: 'black'
