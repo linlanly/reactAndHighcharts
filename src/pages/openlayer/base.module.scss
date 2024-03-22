@@ -1,0 +1,44 @@
+.tools {
+  position: absolute;
+  top: 20px;
+  left: 40px;
+  a {
+    display: inline-block;
+    margin-left: 20px;
+    background-color: aqua;
+    border-radius: 4px;
+    padding: 3px 10px;
+    cursor: pointer;
+  }
+}
+.locate {
+  top: 6em;
+  left: .5em;
+}
+.visualiztion-list,
+.visualiztion-image-list {
+  position: absolute;
+  top: 20px;
+  left: 300px;
+}
+.visualiztion-image-list {
+  left: 400px;
+}
+
+.current-area {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  font-size: 20px;
+  font-weight: bold;
+  background-color: purple;
+  padding: 10px;
+  border-radius: 4px;
+}
+.silder {
+  position: absolute;
+  top: 20px;
+  left: 540px;
+  background-color: white;
+  color: black;
+}

@@ -1,10 +1,12 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
+import path, { resolve } from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react()
+  ],
   resolve: {
     alias: [
       {
@@ -13,5 +15,9 @@ export default defineConfig({
       }
     ],
     extensions: ['.msj', '.js', '.ts', '.jsx', '.tsx', '.json']
+  },
+  server: {
+    host: 'localhost',
+    port: 80
   }
 })

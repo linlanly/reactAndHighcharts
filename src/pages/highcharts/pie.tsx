@@ -169,6 +169,7 @@ const options: any = {
   ],
 }
 export default function OtherChart() {
+  
   initCharts()
   return (
     <>{

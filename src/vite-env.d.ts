@@ -1,4 +1,5 @@
 /// <reference types="vite/client" />
+declare module 'three';
 declare module '*.ts';
 declare module "*.tsx";
 declare module "react";
