@@ -15,7 +15,12 @@ function initShader(gl: WebGL2RenderingContext): WebGLShader | null {
   precision mediump float;
   varying vec4 v_color;
   void main() {
-    gl_FragColor = v_color;
+    float dist = distance(gl_PointCoord, vec2(0.5, 0.5));
+    if (dist < 0.5) {
+      gl_FragColor = v_color;
+    } else {
+      discard;
+    }
   }`
   let vshader: WebGLShader | null = gl.createShader(gl.VERTEX_SHADER)
   if (!vshader) {

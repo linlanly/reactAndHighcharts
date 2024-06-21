@@ -12,17 +12,12 @@ export default function baseContent() {
     }`
 
     var fragShaderSource = `
-      void changeColor(out lowp float color) {
-        color = 0.2;
+      void changeColor(inout lowp float color) {
+        lowp float color = 0.2;
       }
       void main() {
-        lowp float color = 1.0;
         changeColor(color);
         gl_FragColor = vec4(0.0, 0.0, color, 1.0);
-        lowp float r = distance(gl_PointCoord, vec2(0.5, 0.5));
-        if (r > 0.5) {
-          discard;
-        }
       }`
     var program = initShader(gl, vertexShaderSource, fragShaderSource)
     gl.drawArrays(gl.POINTS, 0, 1)

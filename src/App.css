@@ -1,12 +1,17 @@
-#root {
+body,html,#root {
   width: 100%;
   height: 100%;
-  margin: 0 auto;
-  text-align: center;
-  color: rgb(243, 243, 91);
-  flex-direction: column;
+  overflow: hidden;
 }
-#root>div {
-  width: 100%;
-  height: 100%;
+#webgl,
+#canvas2D {
+  position: absolute;
+  top: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+#canvas2D {
+  z-index: 2;
+  justify-content: space-between;
+
 }

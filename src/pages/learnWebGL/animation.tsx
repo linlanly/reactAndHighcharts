@@ -4,23 +4,13 @@ import Matrix4 from "./matrix4.js"
 function initShader(gl: WebGL2RenderingContext): WebGLShader | null {
   let vsource = `
   attribute vec4 position;
-  uniform vec4 translation;
-  uniform vec2 angle;
-  uniform mat4 mangle;
-  uniform mat4 mtranslation;
-  uniform mat4 mscale;
+  uniform mat4 uInfo;
   void main() {
-    // gl_Position = position + translation;
-    // gl_Position = vec4(position.x * angle.y - position.y * angle.x, position.x * angle.x + position.y * angle.y, position.z, position.w);
-    // gl_Position = mangle * position;
-    // gl_Position = mtranslation * position;
-    // gl_Position = mscale * position;
-    gl_Position = position;
+    gl_Position = uInfo * position;
   }`
   let fsource = `
-  
   void main() {
-    gl_FragColor = vec4(1.0, 1.0, 0.0);
+    gl_FragColor = vec4(1.0, 0.5, 0.5, 1.0);
   }`
   let vshader: WebGLShader | null = gl.createShader(gl.VERTEX_SHADER)
   if (!vshader) {
@@ -57,7 +47,35 @@ function bindBuffer(gl: WebGL2RenderingContext, data: Float32Array, attrib: any,
   gl.enableVertexAttribArray(attrib)
 }
 
-let points: Array<number> = [0, 0, .6, 0, .4, .3, .2, .4], count: number = 2;
+let points: Array<number> = [0, 0, .6, 0, .4, .3], count: number = 2;
+
+let angleStep = 45, currentAngle = 0, translateX = 0, lastTime = Date.now()
+function tick(gl: WebGL2RenderingContext, alocs: Matrix4, uname: WebGLUniformLocation) {
+  function drawBefore() {
+    changeAngle()
+    draw(gl, alocs, uname)
+    requestAnimationFrame(drawBefore)
+  }
+  drawBefore()
+}
+
+function changeAngle() {
+  let now = Date.now()
+  let elapsed = now - lastTime
+  lastTime = now
+  let newAngle = currentAngle + (angleStep * elapsed) / 1000.0
+  currentAngle = newAngle %= 360
+}
+
+function draw(gl: WebGL2RenderingContext, alocs: Matrix4, uname: WebGLUniformLocation) {
+  let newTranslate = translateX + 0.004
+  translateX = translateX > 1 ? -1 : newTranslate
+  alocs.rotate(currentAngle, false, false, true)
+  alocs.setTranslate(translateX, 0, 0)
+  gl.uniformMatrix4fv(uname, false, alocs.elements)
+  // gl.clear(gl.COLOR_BUFFER_BIT)
+  gl.drawArrays(gl.TRIANGLES, 0, 3)
+}
 
 export default function baseContent() {
   useEffect(() => {
@@ -71,35 +89,10 @@ export default function baseContent() {
       return
     }
     let position = gl.getAttribLocation(program, 'position')
-    let translation = gl.getUniformLocation(program, 'translation')
-    let rotate = gl.getUniformLocation(program, 'angle')
-    let mangle = gl.getUniformLocation(program, 'mangle')
-    let mtranslation = gl.getUniformLocation(program, 'mtranslation')
-    let mscale = gl.getUniformLocation(program, 'mscale')
-
+    let uInfo = gl.getUniformLocation(program, 'uInfo')
+    bindBuffer(gl, new Float32Array(points), position, count)
     let matrix4 = new Matrix4()
-    let angle = 60
-    let redian = angle * Math.PI / 180
-
-    // bindBuffer(gl, new Float32Array(points), position, count)
-    // gl.uniform4f(translation, -.3, -.4, 0.0, 0.0)
-    // gl.uniform2f(rotate, Math.sin(redian), Math.cos(redian))
-    // gl.uniformMatrix4fv(mangle, false, matrix4.elements)
-    // matrix4.translate(.2, -.8, .5)
-    // gl.uniformMatrix4fv(mtranslation, false, matrix4.elements)
-    // matrix4.scale(1.2, 1.4, .6)
-    // gl.uniformMatrix4fv(mscale, false, matrix4.elements)
-
-    matrix4.setData(new Float32Array([0, 0, 0, 1, .6, 0, 0, 1, .4, .3, 0, 1, .2, .4, 0, 1]))
-    matrix4.setTranslate(-.4, 0, 0)
-    matrix4.setRotate(angle, true, false, true)
-    // matrix4.setScale(0.8, 1.2, 1.4)
-    bindBuffer(gl, matrix4.elements, position, 4)
-
-
-    gl.clearColor(1.0, 0.5, 0.3, 1.0)
-    gl.clear(gl.COLOR_BUFFER_BIT)
-    gl.drawArrays(gl.TRIANGLE_FAN, 0, Math.floor(points.length / count))
+    tick(gl, matrix4, uInfo)
   }, [])
   return (
     <>

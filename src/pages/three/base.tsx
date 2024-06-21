@@ -2,21 +2,30 @@ import { Component } from 'react';
 import * as Three from "three"
 import WebGL from "@/utils/WebGL.js"
 import { useEffect } from "react"
-import { useSearchParams, useParams, useLocation } from 'react-router-dom';
 
 const scene = new Three.Scene()
 const camera = new Three.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const render = new Three.WebGLRenderer()
 render.setSize(window.innerWidth, window.innerHeight)
-const geometry = new Three.BoxGeometry(1, 1, 1);
+const geometry = new Three.BoxGeometry(.1, .1, .1);
 const material = new Three.MeshBasicMaterial({ color: 0x00ff00 })
 const cube = new Three.Mesh(geometry, material);
 
+let mesh
+const loader = new Three.JSONLoader()
+loader.load('src/assets/hand-1.json', function(geometry) {
+  console.log('show data info', geometry)
+  let mat = new Three.MeshBasicMaterial({color: 0xF0c8c9, skinning: true})
+  mesh = new Three.SkinnedMesh(geometry, mat)
+  console.log('show json', mesh)
+  
+  mesh.rotation.x = .5 * Math.PI
+  mesh.rotation.z = .7 * Math.PI
+
+  scene.add(mesh)
+})
+
 function animate() {
-  if (cube.rotation) {
-    cube.rotation.x += 0.01
-    cube.rotation.y += 0.01
-  }
   requestAnimationFrame(() => {
     animate()
   })
@@ -30,12 +39,6 @@ function drawCube() {
 }
 
 export default function SceneBase() {
-  const pid = useParams()?.id;
-  const [search] = useSearchParams()
-  const sid = search?.get('id')
-  const location = useLocation()
-  const stid = location?.state?.id
-  console.log('show redinro', pid, sid, stid)
   useEffect(() => {
 
     if (!WebGL.isWebGLAvailable()) {

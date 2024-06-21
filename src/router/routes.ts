@@ -53,7 +53,27 @@ const routes: Array<routeType> = [
   dealPath('/webGLDrawTexture', '../pages/webGL/drawTexture.tsx'),
   dealPath('/webGLDrawTransparency', '../pages/webGL/drawTransparency.tsx'),
   dealPath('/learnWebGLIndex', '../pages/learnWebGL/index.tsx'),
-  dealPath('/learnWebGLTriangle', '../pages/learnWebGL/triangle.tsx')
+  dealPath('/learnWebGLTriangle', '../pages/learnWebGL/triangle.tsx'),
+  dealPath('/learnWebGLAnimation', '../pages/learnWebGL/animation.tsx'),
+  dealPath('/learnWebGLColor', '../pages/learnWebGL/color.tsx'),
+  dealPath('/learnWebGLTexture', '../pages/learnWebGL/texture.tsx'),
+  dealPath('/learnWebGLLookAtTriangle', '../pages/learnWebGL/lookAtTriangle.tsx'),
+  dealPath('/learnWebGLVisualSpace', '../pages/learnWebGL/visualSpace.tsx'),
+  dealPath('/learnWebGLPerspectiveview', '../pages/learnWebGL/perspectiveview.tsx'),
+  dealPath('/learnWebGLCube', '../pages/learnWebGL/cube.tsx'),
+  dealPath('/learnWebGLLight', '../pages/learnWebGL/light.tsx'),
+  dealPath('/learnWebGLLightAndTranslate', '../pages/learnWebGL/lightAndTranslate.tsx'),
+  dealPath('/learnWebGLPointLight', '../pages/learnWebGL/pointLight.tsx'),
+  dealPath('/learnWebGLJointModel', '../pages/learnWebGL/jointModel.tsx'),
+  dealPath('/learnWebGLMultipleJointModel', '../pages/learnWebGL/multipleJointModel.tsx'),
+  dealPath('/learnWebGLMultipleJointModel_segment', '../pages/learnWebGL/multipleJointModel_segment.tsx'),
+  dealPath('/learnWebGLRotateObject', '../pages/learnWebGL/rotateObject.tsx'),
+  dealPath('/learnWebGLFog', '../pages/learnWebGL/fog.tsx'),
+  dealPath('/learnWebGLProgramObject', '../pages/learnWebGL/programObject.tsx'),
+  dealPath('/learnWebGLFramebufferObject', '../pages/learnWebGL/framebufferObject.tsx'),
+  dealPath('/learnWebGLShadow', '../pages/learnWebGL/shadow.tsx'),
+  dealPath('/learnWebGLOBJViewer', '../pages/learnWebGL/OBJViewer.tsx'),
+  dealPath('/learnThreeIndex', '../pages/learnThreejs/index.tsx')
 ]
 
 export default routes
